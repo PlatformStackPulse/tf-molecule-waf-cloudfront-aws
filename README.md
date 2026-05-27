@@ -280,7 +280,7 @@ No providers.
 |------|--------|---------|
 | <a name="module_ip_set"></a> [ip\_set](#module\_ip\_set) | git::https://github.com/PlatformStackPulse/tf-atom-wafv2-ip-set-aws.git | v1.1.0 |
 | <a name="module_logging"></a> [logging](#module\_logging) | git::https://github.com/PlatformStackPulse/tf-atom-wafv2-web-acl-logging-aws.git | v1.1.0 |
-| <a name="module_regex_pattern_set"></a> [regex\_pattern\_set](#module\_regex\_pattern\_set) | git::https://github.com/PlatformStackPulse/tf-atom-wafv2-regex-pattern-set-aws.git | v1.0.0 |
+| <a name="module_regex_pattern_set"></a> [regex\_pattern\_set](#module\_regex\_pattern\_set) | git::https://github.com/PlatformStackPulse/tf-atom-wafv2-regex-pattern-set-aws.git | v1.1.0 |
 | <a name="module_rule_group"></a> [rule\_group](#module\_rule\_group) | git::https://github.com/PlatformStackPulse/tf-atom-wafv2-rule-group-aws.git | v1.1.0 |
 | <a name="module_this"></a> [this](#module\_this) | git::https://github.com/PlatformStackPulse/tf-label.git | v1.0.0 |
 | <a name="module_web_acl"></a> [web\_acl](#module\_web\_acl) | git::https://github.com/PlatformStackPulse/tf-atom-wafv2-web-acl-aws.git | v1.1.0 |

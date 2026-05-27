@@ -18,7 +18,7 @@ module "ip_set" {
 
 # --- Regex Pattern Set (optional) ---
 module "regex_pattern_set" {
-  source = "git::https://github.com/PlatformStackPulse/tf-atom-wafv2-regex-pattern-set-aws.git?ref=v1.0.0"
+  source = "git::https://github.com/PlatformStackPulse/tf-atom-wafv2-regex-pattern-set-aws.git?ref=v1.1.0"
 
   count = length(var.regex_patterns) > 0 ? 1 : 0
 
