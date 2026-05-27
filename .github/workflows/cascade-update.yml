@@ -1,0 +1,135 @@
+name: Cascade Update from Atom
+# Triggered by atom releases via repository_dispatch
+
+on:
+  repository_dispatch:
+    types: [atom-release]
+  workflow_dispatch:
+    inputs:
+      atom_name:
+        description: "Atom repo name (e.g. tf-atom-ecs-cluster-aws)"
+        required: true
+        type: string
+      atom_version:
+        description: "New atom version tag (e.g. v1.2.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  TF_VERSION: "1.11.3"
+
+jobs:
+  cascade-update:
+    name: Update Atom Reference
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine atom info
+        id: atom
+        run: |
+          if [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
+            ATOM_NAME="${{ github.event.client_payload.atom_name }}"
+            ATOM_VERSION="${{ github.event.client_payload.atom_version }}"
+            ATOM_REPO="${{ github.event.client_payload.atom_repo }}"
+          else
+            ATOM_NAME="${{ github.event.inputs.atom_name }}"
+            ATOM_VERSION="${{ github.event.inputs.atom_version }}"
+            ATOM_REPO="PlatformStackPulse/${ATOM_NAME}"
+          fi
+          echo "name=$ATOM_NAME" >> "$GITHUB_OUTPUT"
+          echo "version=$ATOM_VERSION" >> "$GITHUB_OUTPUT"
+          echo "repo=$ATOM_REPO" >> "$GITHUB_OUTPUT"
+          echo "branch=chore/cascade-${ATOM_NAME}-${ATOM_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Check if atom is referenced
+        id: check
+        run: |
+          ATOM_NAME="${{ steps.atom.outputs.name }}"
+          if grep -q "PlatformStackPulse/${ATOM_NAME}.git" main.tf; then
+            echo "referenced=true" >> "$GITHUB_OUTPUT"
+            CURRENT_REF=$(grep "PlatformStackPulse/${ATOM_NAME}.git" main.tf | head -1 | grep -oP '\?ref=\K[^"]+')
+            echo "current_ref=$CURRENT_REF" >> "$GITHUB_OUTPUT"
+          else
+            echo "referenced=false" >> "$GITHUB_OUTPUT"
+            echo "WARNING: Atom ${ATOM_NAME} is not referenced in this molecule. Skipping."
+          fi
+
+      - name: Update source reference
+        if: steps.check.outputs.referenced == 'true'
+        run: |
+          ATOM_NAME="${{ steps.atom.outputs.name }}"
+          NEW_VERSION="${{ steps.atom.outputs.version }}"
+          CURRENT_REF="${{ steps.check.outputs.current_ref }}"
+
+          echo "Updating ${ATOM_NAME}: ${CURRENT_REF} -> ${NEW_VERSION}"
+
+          sed -i "s|PlatformStackPulse/${ATOM_NAME}.git?ref=${CURRENT_REF}|PlatformStackPulse/${ATOM_NAME}.git?ref=${NEW_VERSION}|g" main.tf
+
+          echo "Updated references:"
+          grep "PlatformStackPulse/${ATOM_NAME}.git" main.tf
+
+      - name: Setup Terraform
+        if: steps.check.outputs.referenced == 'true'
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Validate updated module
+        if: steps.check.outputs.referenced == 'true'
+        id: validate
+        run: |
+          terraform init -backend=false
+          terraform validate
+          terraform fmt -check -recursive || terraform fmt -recursive
+        continue-on-error: true
+
+      - name: Create cascade PR
+        if: steps.check.outputs.referenced == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ATOM_NAME="${{ steps.atom.outputs.name }}"
+          NEW_VERSION="${{ steps.atom.outputs.version }}"
+          CURRENT_REF="${{ steps.check.outputs.current_ref }}"
+          BRANCH="${{ steps.atom.outputs.branch }}"
+          VALIDATE_RESULT="${{ steps.validate.outcome }}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git checkout -b "$BRANCH"
+          git add -A
+          git commit -m "chore(deps): update ${ATOM_NAME} ${CURRENT_REF} to ${NEW_VERSION}"
+
+          git push origin "$BRANCH"
+
+          if [[ "$VALIDATE_RESULT" == "success" ]]; then
+            TITLE="chore(deps): cascade update ${ATOM_NAME} to ${NEW_VERSION}"
+            BODY="## Cascade Update\n\n**Atom**: ${ATOM_NAME}\n**Version**: ${CURRENT_REF} -> ${NEW_VERSION}\n**Validation**: PASSED\n\nAutomatically created by cascade pipeline. Safe to merge after CI."
+          else
+            TITLE="chore(deps): cascade update ${ATOM_NAME} to ${NEW_VERSION} [NEEDS ATTENTION]"
+            BODY="## Cascade Update - REQUIRES ATTENTION\n\n**Atom**: ${ATOM_NAME}\n**Version**: ${CURRENT_REF} -> ${NEW_VERSION}\n**Validation**: FAILED\n\nManual intervention required - the atom may have breaking changes."
+          fi
+
+          gh pr create \
+            --title "$TITLE" \
+            --body "$(echo -e "$BODY")" \
+            --base main \
+            --head "$BRANCH"
+
+      - name: Summary
+        if: steps.check.outputs.referenced == 'true'
+        run: |
+          echo "## Cascade Update" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Atom**: ${{ steps.atom.outputs.name }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Version**: ${{ steps.check.outputs.current_ref }} -> ${{ steps.atom.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Validation**: ${{ steps.validate.outcome }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **PR Branch**: ${{ steps.atom.outputs.branch }}" >> "$GITHUB_STEP_SUMMARY"
