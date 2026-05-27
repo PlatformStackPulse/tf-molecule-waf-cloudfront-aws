@@ -1,6 +1,18 @@
 # Changelog
 
 
+<a name="v1.1.0"></a>
+## [v1.1.0](https://github.com/PlatformStackPulse/Terraform-module-base-template/compare/v1.0.1-feat-implement-molecule.4...v1.1.0) (2026-05-27)
+
+### Documentation
+
+- **changelog:** update CHANGELOG.md [skip ci] ([abf39d9](https://github.com/PlatformStackPulse/Terraform-module-base-template/commit/abf39d98ab5da40457d1a33a97a330d94cdbac54))
+
+### Features
+
+- implement tf-molecule-waf-cloudfront-aws ([#1](https://github.com/PlatformStackPulse/Terraform-module-base-template/issues/1)) ([776bc39](https://github.com/PlatformStackPulse/Terraform-module-base-template/commit/776bc39c10970e529aac997ecb2be760dd064782))
+
+
 <a name="v1.0.1-feat-implement-molecule.4"></a>
 ## [v1.0.1-feat-implement-molecule.4](https://github.com/PlatformStackPulse/Terraform-module-base-template/compare/v1.0.0...v1.0.1-feat-implement-molecule.4) (2026-05-27)
 
