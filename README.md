@@ -1,8 +1,13 @@
 # tf-molecule-waf-cloudfront-aws
 
-[![CI](https://github.com/PlatformStackPulse/tf-molecule-waf-cloudfront-aws/actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
-![Terraform](https://img.shields.io/badge/terraform-%3E%3D1.6.0-blue?logo=terraform)
-![License](https://img.shields.io/github/license/PlatformStackPulse/tf-molecule-waf-cloudfront-aws)
+[![Terraform Format](https://img.shields.io/badge/terraform-fmt-blue?logo=terraform)](https://github.com/PlatformStackPulse/tf-molecule-waf-cloudfront-aws/actions)
+[![Terraform Validate](https://img.shields.io/badge/terraform-validate-blue?logo=terraform)](https://github.com/PlatformStackPulse/tf-molecule-waf-cloudfront-aws/actions)
+[![TFLint](https://img.shields.io/badge/tflint-passing-brightgreen?logo=terraform)](https://github.com/PlatformStackPulse/tf-molecule-waf-cloudfront-aws/actions)
+[![Terraform Test](https://img.shields.io/badge/tests-3%20passed-brightgreen?logo=terraform)](https://github.com/PlatformStackPulse/tf-molecule-waf-cloudfront-aws/actions)
+[![Security Scan](https://img.shields.io/badge/trivy-passing-brightgreen?logo=aqua)](https://github.com/PlatformStackPulse/tf-molecule-waf-cloudfront-aws/actions)
+[![Conventional Commits](https://img.shields.io/badge/commits-conventional-blue?logo=conventionalcommits)](https://conventionalcommits.org)
+[![Documentation](https://img.shields.io/badge/docs-terraform--docs-blue?logo=readthedocs)](https://github.com/PlatformStackPulse/tf-molecule-waf-cloudfront-aws/actions)
+[![License](https://img.shields.io/badge/license-MIT-blue?logo=opensourceinitiative)](LICENSE)
 
 Terraform **molecule** that composes AWS WAFv2 atoms into a complete, ready-to-attach
 Web ACL for **Amazon CloudFront**. It wires an IP set, an optional regex pattern set, an
