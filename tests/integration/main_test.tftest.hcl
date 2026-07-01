@@ -3,7 +3,7 @@
 # These tests run against a real AWS provider.
 # Requires valid AWS credentials.
 #
-# Run with: terraform test -filter=tests/integration/
+# Run with: terraform test -test-directory=tests/integration
 #
 # WARNING: These tests create real AWS resources.
 # Costs may be incurred. Resources are cleaned up after tests.

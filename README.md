@@ -1,30 +1,24 @@
-# Terraform Module Template
+# tf-molecule-waf-cloudfront-aws
 
-<!-- Badges: Update REPO_OWNER/REPO_NAME after creating from template -->
-[![CI](https://github.com/PlatformStackPulse/terraform-atom-molecule-module-template/actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
-[![Release](https://github.com/PlatformStackPulse/terraform-atom-molecule-module-template/actions/workflows/auto-release.yml/badge.svg)](../../actions/workflows/auto-release.yml)
-[![CodeQL](https://github.com/PlatformStackPulse/terraform-atom-molecule-module-template/actions/workflows/codeql.yml/badge.svg)](../../actions/workflows/codeql.yml)
-[![Changelog](https://github.com/PlatformStackPulse/terraform-atom-molecule-module-template/actions/workflows/changelog.yml/badge.svg)](../../actions/workflows/changelog.yml)
-![Latest Release](https://img.shields.io/github/v/release/PlatformStackPulse/terraform-atom-molecule-module-template?label=latest%20release&sort=semver)
+[![CI](https://github.com/PlatformStackPulse/tf-molecule-waf-cloudfront-aws/actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
 ![Terraform](https://img.shields.io/badge/terraform-%3E%3D1.6.0-blue?logo=terraform)
-![License](https://img.shields.io/github/license/PlatformStackPulse/terraform-atom-molecule-module-template)
+![License](https://img.shields.io/github/license/PlatformStackPulse/tf-molecule-waf-cloudfront-aws)
 
-A production-ready template for creating Terraform modules following the **one module per repository** best practice, with built-in CI/CD, security scanning, testing, documentation generation, and publishing to public registries.
+Terraform **molecule** that composes AWS WAFv2 atoms into a complete, ready-to-attach
+Web ACL for **Amazon CloudFront**. It wires an IP set, an optional regex pattern set, an
+optional custom rule group, the Web ACL itself, and optional logging — all pinned to the
+`CLOUDFRONT` scope (`us-east-1`) — behind a single `tf-label`-driven interface.
 
 ## Features
 
-- **One Module Per Repo** — Module lives at the root; no nested `modules/` directory
-- **Registry Publishing** — Auto-publish to Terraform Registry, Artifactory, or GitLab on release
-- **Native Terraform Testing** — `terraform test` with mock providers (no external tools)
-- **Security Scanning** — Trivy IaC scanning for HIGH/CRITICAL vulnerabilities
-- **Linting** — TFLint with AWS ruleset (preset "all")
-- **Auto Documentation** — terraform-docs generates README sections on every commit
-- **GitHub Actions CI/CD** — Workflows for the full module lifecycle
-- **Auto Release** — CI passes on main → auto-tag → GitHub Release created
-- **Pre-Commit Hooks** — Format, validate, lint, docs, and security on every commit
-- **Conventional Commits** — Enforced commit message format
-- **Semantic Versioning** — Automated version management and releases
-- **DevContainer** — VS Code remote development ready
+- **CloudFront-scoped Web ACL** — All atoms are created with `scope = "CLOUDFRONT"`; the `web_acl_id` output drops straight into `aws_cloudfront_distribution.web_acl_id` (no association resource needed).
+- **IP allow/block set** — Provide IPv4 or IPv6 CIDRs via `ip_addresses` / `ip_address_version` for a reusable IP set.
+- **Optional regex pattern set** — Supply `regex_patterns` to create a regex pattern set; an empty list skips it.
+- **Optional custom rule group** — Set `custom_rule_group_capacity > 0` with `custom_rules` to attach a bespoke rule group; `0` skips it.
+- **Configurable default action + rules** — `default_action` (`allow`/`block`) and `web_acl_rules` shape the Web ACL.
+- **Optional WAF logging** — Set `logging_destination_arn` (with optional `logging_redacted_fields`) to enable Web ACL logging; `null` skips it.
+- **tf-label context chaining** — Standard `namespace`/`stage`/`name`/`enabled`/`tags` interface; `enabled = false` disables the whole stack.
+- **Quality gates** — `terraform test` (mock provider), TFLint, Trivy IaC scan, terraform-docs, and pre-commit hooks in CI.
 
 ## CI Pipeline
 
@@ -77,38 +71,45 @@ See [TEMPLATE_GUIDE.md](TEMPLATE_GUIDE.md) for detailed instructions.
 
 ## Usage
 
-### From GitHub
+> **Scope:** this molecule creates `CLOUDFRONT`-scoped WAF resources, which **must** live
+> in `us-east-1`. Configure the `aws` provider accordingly.
 
 ```hcl
-module "this" {
-  source = "github.com/PlatformStackPulse/terraform-aws-my-module?ref=v1.0.0"
+provider "aws" {
+  region = "us-east-1"
+}
 
-  name        = "my-resource"
-  environment = "dev"
-  namespace   = "myorg"
+module "cloudfront_waf" {
+  source = "git::https://github.com/PlatformStackPulse/tf-molecule-waf-cloudfront-aws.git?ref=v1.0.0"
+
+  # tf-label context
+  namespace = "eg"
+  stage     = "prod"
+  name      = "edge"
+
+  # Web ACL
+  default_action = "allow"
+  web_acl_rules  = [] # add managed / rate-based / custom rule blocks here
+
+  # IP set (optional)
+  ip_addresses       = ["203.0.113.0/24"]
+  ip_address_version = "IPV4"
+
+  # Regex pattern set (optional — empty list skips it)
+  regex_patterns = ["^/admin"]
+
+  # Logging (optional — null skips it)
+  logging_destination_arn = "arn:aws:logs:us-east-1:111122223333:log-group:aws-waf-logs-edge"
 
   tags = {
     Project = "example"
     Owner   = "platform-engineering"
   }
 }
-```
 
-### From Terraform Registry
-
-```hcl
-module "this" {
-  source  = "PlatformStackPulse/my-module/aws"
-  version = "~> 1.0"
-
-  name        = "my-resource"
-  environment = "dev"
-  namespace   = "myorg"
-
-  tags = {
-    Project = "example"
-    Owner   = "platform-engineering"
-  }
+resource "aws_cloudfront_distribution" "this" {
+  # ...
+  web_acl_id = module.cloudfront_waf.web_acl_id
 }
 ```
 
@@ -329,6 +330,32 @@ No resources.
 | <a name="output_web_acl_arn"></a> [web\_acl\_arn](#output\_web\_acl\_arn) | The ARN of the Web ACL. |
 | <a name="output_web_acl_id"></a> [web\_acl\_id](#output\_web\_acl\_id) | The ID of the Web ACL. Use this in aws\_cloudfront\_distribution.web\_acl\_id. |
 <!-- END_TF_DOCS -->
+
+## Tests
+
+Native `terraform test` runs against a **mocked** AWS provider — no real resources are
+created and no credentials are needed. Assertions target plan-known values (the `tf-label`
+id string, module counts, and input pass-throughs) so they stay deterministic under mocking.
+
+```bash
+# Run the unit test suite
+terraform init -backend=false
+terraform test -test-directory=tests/unit -verbose
+
+# Or via the Makefile
+make test
+```
+
+| Suite | Path | Provider | What it checks |
+|-------|------|----------|----------------|
+| Unit | `tests/unit/main_test.tftest.hcl` | mocked | id composition, optional sub-module gating (regex/rule-group/logging), `enabled = false` disables the stack |
+| Integration | `tests/integration/main_test.tftest.hcl` | real AWS (`us-east-1`) | opt-in, creates real WAF resources |
+
+Integration tests are opt-in (they create billable AWS resources):
+
+```bash
+make test-integration   # terraform test -test-directory=tests/integration
+```
 
 ## Learning Materials
 
